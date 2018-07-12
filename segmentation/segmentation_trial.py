@@ -265,8 +265,22 @@ def Model(_X, _W, _b, _keepprod):
     output = tf.nn.conv2d(decoder1, _W['dense_inner_prod'], strides=[1,1,1,1], padding='SAME')
     return output
 
+
 # define function
 pred = Model(x, weights, bias, keepprob)
+lin_pred = tf.reshape(pred, shape=[-1, nrclass])
+lin_y = tf.reshape(y, shape=[-1, nrclass])
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(lin_pred, lin_y))
+# class label
+predmax = tf.argmax(pred, axis=3)
+ymax = tf.argmax(y, axis=3)
+# Accuracy
+corr = tf.equal(tf.argmax(y, 3), tf.argmax(pred, 3))
+accr = tf.reduce_mean(tf.cast(corr, 'float'))
+# Optimizer
+optm = tf.train.AdamOptimizer(0.0001).minimize(cost)
+batch_size = 128
+n_epoch = 1000
 
 
 
