@@ -282,6 +282,59 @@ optm = tf.train.AdamOptimizer(0.0001).minimize(cost)
 batch_size = 128
 n_epoch = 1000
 
+resumeTraining = True
+with tf.Session() as sess:
+    # initialize all variables
+    tf.initialize_all_variables().run()
+    saver = tf.train.Saver()
+    checkpoint = tf.train.latest_checkpoint("nets/semseg_basic")
+    print("checkpoint: %s" % (checkpoint))
+    if resumeTraining is False:
+        print("start from scratch")
+    elif checkpoint:
+        print('restore from checkpoints ', checkpoint)
+    else:
+        print('start over')
+
+    for epoch_i in range(n_epoch):
+        trainLoss = []
+        trainAcc = []
+        num_batch = int(ntrain/batch_size) + 1
+        for _ in range(num_batch):
+            randidx = np.random.randint(ntrain, size=batch_size)
+            batchData = trainData[randidx]
+            batchLabel = trainLabelOnehot[randidx]
+            sess.run(optm, feed_dict={
+                x: batchData,
+                y: batchLabel,
+                keepprob: 0.7
+            })
+            trainLoss.append(sess.run(cost, feed_dict={
+                x: batchData,
+                y: batchLabel,
+                keepprob: 1.0
+            }))
+            trainAcc.append(sess.run(accr, feed_dict={
+                x: batchData,
+                y: batchLabel,
+                keepprob: 1.0
+            }))
+        # average loss and accuracy
+        trainLoss = np.mean(trainLoss)
+        trainAcc = np.mean(trainLoss)
+        # run Test
+        valLoss = sess.run(cost, feed_dict={
+            x: testData,
+            y: testLabelOnehot,
+            keepprob: 1.0
+        })
+        valAcc = sess.run(accr, feed_dict={
+            x: testData,
+            y: testLabelOnehot,
+            keepprob: 1.0
+        })
+        print("[%02d/%02d] trainLoss: %.4f trainAcc: %.2f valLoss: %.4f valAcc: %.2f"
+              % (epoch_i, n_epoch, trainLoss, trainAcc, valLoss, valAcc))
 
 
 
